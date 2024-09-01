@@ -1,55 +1,17 @@
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
-import * as apigateway from "aws-cdk-lib/aws-apigateway";
-import * as cognito from "aws-cdk-lib/aws-cognito";
-import * as ecr from "aws-cdk-lib/aws-ecr";
+import * as apigatewayv2 from "aws-cdk-lib/aws-apigatewayv2";
+import * as apigatewayv2integrations from "aws-cdk-lib/aws-apigatewayv2-integrations";
 import * as ecsPatterns from "aws-cdk-lib/aws-ecs-patterns";
 import * as ecs from "aws-cdk-lib/aws-ecs";
+import * as ec2 from "aws-cdk-lib/aws-ec2";
 
 export class LobbyServiceStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    this.apiGateway();
-    this.lobbyServiceBusinessLogic();
-  }
+    const api = new apigatewayv2.HttpApi(this, "lobbyApi");
 
-  private apiGateway() {
-    const api = new apigateway.RestApi(this, "lobbyApi");
-
-    const userPool = cognito.UserPool.fromUserPoolId(
-      this,
-      "rookrallyUserPool",
-      cdk.Fn.importValue("rookrallyUserPoolId"),
-    );
-
-    const auth = new apigateway.CognitoUserPoolsAuthorizer(
-      this,
-      "lobbyAuthorizer",
-      {
-        cognitoUserPools: [userPool],
-      },
-    );
-
-    const candidates = api.root.addResource("candidates");
-    candidates.addMethod(
-      "POST",
-      new apigateway.HttpIntegration("http://amazon.com"),
-      {
-        authorizer: auth,
-        authorizationType: apigateway.AuthorizationType.COGNITO,
-      },
-    );
-  }
-
-  private lobbyServiceBusinessLogic() {
-    const repository = new ecr.Repository(this, "lobbyServiceRepository", {
-      repositoryName: "lobby-service",
-      removalPolicy: cdk.RemovalPolicy.DESTROY, // This will delete the repository when the stack is deleted
-      emptyOnDelete: true,
-    });
-
-    // Create a Fargate service
     const fargateService =
       new ecsPatterns.ApplicationLoadBalancedFargateService(
         this,
@@ -66,5 +28,38 @@ export class LobbyServiceStack extends cdk.Stack {
           publicLoadBalancer: true,
         },
       );
+
+    const securityGroup = new ec2.SecurityGroup(this, "allow-in", {
+      vpc: fargateService.cluster.vpc,
+      allowAllOutbound: true,
+    });
+    securityGroup.connections.allowFrom(ec2.Peer.anyIpv4(), ec2.Port.tcp(80));
+    securityGroup.connections.allowFrom(ec2.Peer.anyIpv4(), ec2.Port.tcp(443));
+
+    const vpcLink = new apigatewayv2.VpcLink(this, "link", {
+      vpc: fargateService.cluster.vpc,
+      subnets: {
+        subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
+      },
+      securityGroups: [securityGroup],
+    });
+
+    const albIntegration = new apigatewayv2integrations.HttpAlbIntegration(
+      "AlbIntegration",
+      fargateService.listener,
+      { vpcLink },
+    );
+
+    api.addRoutes({
+      path: "/{proxy+}",
+      methods: [apigatewayv2.HttpMethod.ANY],
+      integration: albIntegration,
+    });
   }
 }
+
+// const userPool = cognito.UserPool.fromUserPoolId(
+//   this,
+//   "rookrallyUserPool",
+//   cdk.Fn.importValue("rookrallyUserPoolId"),
+// );
