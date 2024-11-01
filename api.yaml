@@ -1,0 +1,10 @@
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: lobby-rest-api
+  description: REST API for the lobby
+spec:
+  type: openapi
+  lifecycle: production
+  definition:
+    $text: ./openapi.yaml
