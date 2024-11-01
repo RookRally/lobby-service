@@ -20,3 +20,5 @@ spec:
   owner: sat-lobby-team
   lifecycle: production
   type: service
+  dependsOn:
+    - Component:registration
