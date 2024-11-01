@@ -1,0 +1,4 @@
+site_name: 'lobby-docs'
+
+nav:
+  - Home: index.md

@@ -1,0 +1,22 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: lobby
+  description: |
+    Provides functionality for participants to discover each other in order to start a game.
+  links:
+    - title: Website
+      url: http://backstage.io
+    - title: How-Tos
+      url: https://backstage.io/docs
+    - title: Storybook
+      url: https://backstage.io/storybook
+    - title: Slack Chat
+      url: https://discord.com/invite/EBHEGzX
+  annotations:
+    github.com/project-slug: RookRally/lobby-service
+    backstage.io/techdocs-ref: dir:.
+spec:
+  owner: sat-lobby-team
+  lifecycle: production
+  type: service
