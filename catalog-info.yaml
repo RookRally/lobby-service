@@ -22,3 +22,5 @@ spec:
   type: service
   dependsOn:
     - Component:registration
+  providesApis:
+    - lobby-rest-api
