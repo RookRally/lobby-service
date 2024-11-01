@@ -24,3 +24,16 @@ spec:
     - Component:registration
   providesApis:
     - lobby-rest-api
+
+---
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: lobby-rest-api
+  description: REST API for the lobby
+spec:
+  type: openapi
+  owner: sat-lobby-team
+  lifecycle: production
+  definition:
+    $text: ./openapi.yaml
